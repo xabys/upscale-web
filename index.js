@@ -20,7 +20,7 @@ app.use(express.static('.'));
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 20 * 1024 * 1024 // Increase to 20MB for better quality
+    fileSize: 20 * 1024 * 1024 // 20MB limit
   },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
@@ -34,10 +34,16 @@ const upload = multer({
 // Store enhanced images in memory (for serverless compatibility)
 const imageCache = new Map();
 
-// Improved image enhancer function
+// Generate proper UUID format
+const generateUUID = () => {
+  const hex = crypto.randomBytes(16).toString('hex');
+  return `${hex.substring(0,8)}-${hex.substring(8,12)}-${hex.substring(12,16)}-${hex.substring(16,20)}-${hex.substring(20,32)}`;
+};
+
+// Improved image enhancer function with 2x scaling
 const generateUsername = () => `${crypto.randomBytes(12).toString('hex')}_aiimglarger`;
 
-const enhanceImage = async (buffer, filename = 'temp.jpg', scaleRatio = 4, type = 0) => {
+const enhanceImage = async (buffer, filename = 'temp.jpg', scaleRatio = 2, type = 0) => {
   try {
     const username = generateUsername();
 
@@ -73,7 +79,7 @@ const enhanceImage = async (buffer, filename = 'temp.jpg', scaleRatio = 4, type 
           'Origin': 'https://imglarger.com',
           'Referer': 'https://imglarger.com/'
         },
-        timeout: 30000, // 30 second timeout
+        timeout: 30000,
         maxContentLength: Infinity,
         maxBodyLength: Infinity
       }
@@ -96,7 +102,7 @@ const enhanceImage = async (buffer, filename = 'temp.jpg', scaleRatio = 4, type 
 
     let result;
     let attempts = 0;
-    const maxAttempts = 120; // 1 minute with 0.5s intervals
+    const maxAttempts = 120;
     
     while (attempts < maxAttempts) {
       try {
@@ -176,49 +182,44 @@ app.post('/api/enhance', upload.single('image'), async (req, res) => {
 
     console.log('Processing image:', req.file.originalname, 'Size:', req.file.size);
     
-    // Enhance the image with higher quality settings
+    // Enhance the image with 2x scale for HD quality
     const enhancedUrl = await enhanceImage(
       req.file.buffer, 
       req.file.originalname || 'image.jpg',
-      4, // Keep 4x scale
+      2, // Changed to 2x scale for HD quality
       0  // Type 0 for general enhancement
     );
 
     console.log('Enhancement completed:', enhancedUrl);
 
-    // Download the enhanced image with better quality preservation
+    // Download the enhanced image
     const imageResponse = await axios.get(enhancedUrl, {
       responseType: 'arraybuffer',
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
       },
-      timeout: 60000, // 60 second timeout for large images
+      timeout: 60000,
       maxContentLength: Infinity,
       maxBodyLength: Infinity
     });
 
-    // Convert the enhanced image to PNG with maximum quality
+    // Convert the enhanced image to high-quality PNG
     const originalBuffer = Buffer.from(imageResponse.data);
     const pngBuffer = await convertToPNG(originalBuffer);
 
-    // Generate UUID-like ID similar to your friend's implementation
-    const imageId = crypto.randomBytes(16).toString('hex');
-    const formattedId = `${imageId.substring(0,8)}-${imageId.substring(8,12)}-${imageId.substring(12,16)}-${imageId.substring(16,20)}-${imageId.substring(20,32)}`;
+    // Generate proper UUID format like "b0dff5a2-78f3-41b8-8e7c-62acecadb793"
+    const imageId = generateUUID();
+    const finalFilename = `${imageId}.png`; // Always PNG with UUID filename
     
-    // Get original filename without extension and force PNG extension
-    const originalName = path.parse(req.file.originalname || 'image').name;
-    const finalFilename = `${formattedId}.png`; // Always PNG now
-    
-    // Store PNG image data in memory cache with longer expiration
-    imageCache.set(formattedId, {
+    // Store PNG image data in memory cache
+    imageCache.set(imageId, {
       buffer: pngBuffer,
-      contentType: 'image/png', // Always PNG
+      contentType: 'image/png',
       filename: finalFilename,
-      originalName: originalName,
       timestamp: Date.now()
     });
 
-    // Clean up old cached images (older than 2 hours for better UX)
+    // Clean up old cached images (older than 2 hours)
     const twoHoursAgo = Date.now() - (2 * 60 * 60 * 1000);
     for (const [key, value] of imageCache.entries()) {
       if (value.timestamp < twoHoursAgo) {
@@ -226,15 +227,15 @@ app.post('/api/enhance', upload.single('image'), async (req, res) => {
       }
     }
 
-    console.log(`PNG image cached with ID: ${formattedId}, Size: ${pngBuffer.length} bytes`);
+    console.log(`High-quality PNG image cached with ID: ${imageId}, Size: ${pngBuffer.length} bytes`);
 
     res.json({
       success: true,
-      imageId: formattedId,
+      imageId: imageId,
       previewUrl: `/outputs/${finalFilename}`,
       downloadUrl: `/download/${finalFilename}`,
       filename: finalFilename,
-      message: 'Image enhanced and converted to PNG successfully'
+      message: 'Image enhanced to 2x HD quality and converted to PNG successfully'
     });
 
   } catch (error) {
@@ -246,21 +247,20 @@ app.post('/api/enhance', upload.single('image'), async (req, res) => {
   }
 });
 
-// Serve enhanced image for preview with better caching (outputs format)
+// Serve enhanced image for preview
 app.get('/outputs/:filename', (req, res) => {
-  // Extract imageId from filename (remove extension)
   const filename = req.params.filename;
-  const imageId = filename.replace(/\.(jpg|jpeg|png|webp)$/i, '');
+  const imageId = filename.replace('.png', ''); // Remove .png extension to get UUID
   const imageData = imageCache.get(imageId);
   
   if (!imageData) {
     return res.status(404).json({ error: 'Image not found or expired' });
   }
 
-  // Set proper headers for high quality PNG image serving
+  // Set proper headers for high quality PNG serving
   res.set({
-    'Content-Type': 'image/png', // Always PNG
-    'Cache-Control': 'public, max-age=7200, s-maxage=7200', // 2 hour cache
+    'Content-Type': 'image/png',
+    'Cache-Control': 'public, max-age=7200, s-maxage=7200',
     'Content-Length': imageData.buffer.length,
     'Accept-Ranges': 'bytes',
     'X-Content-Type-Options': 'nosniff'
@@ -269,20 +269,19 @@ app.get('/outputs/:filename', (req, res) => {
   res.send(imageData.buffer);
 });
 
-// Download enhanced image with proper filename
+// Download enhanced image with proper UUID filename
 app.get('/download/:filename', (req, res) => {
-  // Extract imageId from filename (remove extension)
   const filename = req.params.filename;
-  const imageId = filename.replace(/\.(jpg|jpeg|png|webp)$/i, '');
+  const imageId = filename.replace('.png', ''); // Remove .png extension to get UUID
   const imageData = imageCache.get(imageId);
   
   if (!imageData) {
     return res.status(404).json({ error: 'Image not found or expired' });
   }
 
-  // Use the UUID-style filename with PNG extension
+  // Download with UUID-style filename like "b0dff5a2-78f3-41b8-8e7c-62acecadb793.png"
   res.set({
-    'Content-Type': 'image/png', // Always PNG
+    'Content-Type': 'image/png',
     'Content-Disposition': `attachment; filename="${imageData.filename}"`,
     'Content-Length': imageData.buffer.length,
     'Cache-Control': 'no-cache'
