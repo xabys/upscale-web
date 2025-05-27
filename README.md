@@ -1,1 +1,1 @@
-# hertaupscale
+.
