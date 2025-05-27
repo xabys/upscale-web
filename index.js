@@ -2,11 +2,9 @@ const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
 const path = require('path');
-const fs = require('fs');
 const axios = require('axios');
 const FormData = require('form-data');
 const crypto = require('crypto');
-const sharp = require('sharp');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -20,7 +18,7 @@ app.use(express.static('.'));
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 20 * 1024 * 1024 // 20MB limit
+    fileSize: 10 * 1024 * 1024 // 10MB limit
   },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
@@ -31,40 +29,28 @@ const upload = multer({
   }
 });
 
-// Store enhanced images in memory (for serverless compatibility)
-const imageCache = new Map();
+// Simple cache untuk menyimpan mapping URL (bukan image buffer)
+const urlCache = new Map();
 
-// Generate proper UUID format
-const generateUUID = () => {
-  const hex = crypto.randomBytes(16).toString('hex');
-  return `${hex.substring(0,8)}-${hex.substring(8,12)}-${hex.substring(12,16)}-${hex.substring(16,20)}-${hex.substring(20,32)}`;
-};
+// Generate simple ID
+const generateId = () => crypto.randomBytes(16).toString('hex');
 
-// Improved image enhancer function with 2x scaling
-const generateUsername = () => `${crypto.randomBytes(12).toString('hex')}_aiimglarger`;
+// Image enhancer function (dari Document 1 - yang work)
+const generateUsername = () => `${crypto.randomBytes(8).toString('hex')}_aiimglarger`;
 
-const enhanceImage = async (buffer, filename = 'temp.jpg', scaleRatio = 2, type = 0) => {
+const enhanceImage = async (buffer, filename = 'temp.jpg', scaleRatio = 4, type = 0) => {
   try {
     const username = generateUsername();
 
-    // Upload image with better headers and configuration
+    // Upload image
     const formData = new FormData();
     formData.append('type', type);
     formData.append('username', username);
     formData.append('scaleRadio', scaleRatio.toString());
-    
-    // Determine content type based on filename
-    let contentType = 'image/jpeg';
-    const ext = path.extname(filename).toLowerCase();
-    if (ext === '.png') contentType = 'image/png';
-    else if (ext === '.webp') contentType = 'image/webp';
-    
     formData.append('file', buffer, { 
-      filename: filename,
-      contentType: contentType
+      filename: filename, 
+      contentType: 'image/jpeg' 
     });
-
-    console.log(`[ENHANCE] Starting enhancement for ${filename} with ${scaleRatio}x scale`);
 
     const uploadResponse = await axios.post(
       'https://photoai.imglarger.com/api/PhoAi/Upload', 
@@ -72,27 +58,16 @@ const enhanceImage = async (buffer, filename = 'temp.jpg', scaleRatio = 2, type 
       {
         headers: {
           ...formData.getHeaders(),
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'application/json, text/plain, */*',
-          'Accept-Encoding': 'gzip, deflate, br',
-          'Accept-Language': 'en-US,en;q=0.9',
-          'Origin': 'https://imglarger.com',
-          'Referer': 'https://imglarger.com/'
+          'User-Agent': 'Dart/3.5 (dart:io)',
+          'Accept-Encoding': 'gzip',
         },
-        timeout: 30000,
-        maxContentLength: Infinity,
-        maxBodyLength: Infinity
       }
     );
 
-    if (!uploadResponse.data || !uploadResponse.data.data || !uploadResponse.data.data.code) {
-      throw new Error('Invalid upload response from server');
-    }
-
     const { code } = uploadResponse.data.data;
-    console.log('[UPLOAD] Success, code:', code);
+    console.log('[UPLOAD]', code);
 
-    // Poll for completion with better error handling
+    // Poll for completion
     const pollData = { 
       code: code, 
       type: type, 
@@ -101,72 +76,34 @@ const enhanceImage = async (buffer, filename = 'temp.jpg', scaleRatio = 2, type 
     };
 
     let result;
-    let attempts = 0;
-    const maxAttempts = 120;
-    
-    while (attempts < maxAttempts) {
-      try {
-        const statusResponse = await axios.post(
-          'https://photoai.imglarger.com/api/PhoAi/CheckStatus', 
-          JSON.stringify(pollData), 
-          {
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-              'Accept': 'application/json, text/plain, */*',
-              'Accept-Encoding': 'gzip, deflate, br',
-              'Content-Type': 'application/json',
-              'Origin': 'https://imglarger.com',
-              'Referer': 'https://imglarger.com/'
-            },
-            timeout: 10000
-          }
-        );
-
-        if (statusResponse.data && statusResponse.data.data) {
-          result = statusResponse.data.data;
-          console.log(`[CHECK ${attempts + 1}] Status: ${result.status}`);
-
-          if (result.status === 'success' && result.downloadUrls && result.downloadUrls.length > 0) {
-            console.log('[SUCCESS] Enhancement completed');
-            return result.downloadUrls[0];
-          } else if (result.status === 'error' || result.status === 'failed') {
-            throw new Error(`Enhancement failed with status: ${result.status}`);
-          }
+    for (let i = 0; i < 1000; i++) {
+      const statusResponse = await axios.post(
+        'https://photoai.imglarger.com/api/PhoAi/CheckStatus', 
+        JSON.stringify(pollData), 
+        {
+          headers: {
+            'User-Agent': 'Dart/3.5 (dart:io)',
+            'Accept-Encoding': 'gzip',
+            'Content-Type': 'application/json',
+          },
         }
-      } catch (pollError) {
-        console.log(`[POLL ERROR ${attempts + 1}]`, pollError.message);
-      }
+      );
 
-      attempts++;
+      result = statusResponse.data.data;
+      console.log(`[CHECK ${i + 1}]`, result.status);
+
+      if (result.status === 'success') break;
       await new Promise(resolve => setTimeout(resolve, 500));
     }
 
-    throw new Error('Enhancement timeout after maximum polling attempts');
+    if (result.status === 'success') {
+      return result.downloadUrls[0];
+    } else {
+      throw new Error('Enhancement failed after maximum polling attempts.');
+    }
   } catch (error) {
-    console.error('[ENHANCE ERROR]', error.message || error);
+    console.error('[ERROR]', error.message || error);
     throw error;
-  }
-};
-
-// Function to convert image to PNG with maximum quality
-const convertToPNG = async (imageBuffer) => {
-  try {
-    console.log('[PNG CONVERT] Converting image to PNG with maximum quality');
-    
-    const pngBuffer = await sharp(imageBuffer)
-      .png({
-        quality: 100,
-        compressionLevel: 0, // No compression for maximum quality
-        adaptiveFiltering: false,
-        force: true
-      })
-      .toBuffer();
-    
-    console.log(`[PNG CONVERT] Conversion completed. Original: ${imageBuffer.length} bytes, PNG: ${pngBuffer.length} bytes`);
-    return pngBuffer;
-  } catch (error) {
-    console.error('[PNG CONVERT ERROR]', error);
-    throw new Error('Failed to convert image to PNG: ' + error.message);
   }
 };
 
@@ -180,62 +117,46 @@ app.post('/api/enhance', upload.single('image'), async (req, res) => {
       });
     }
 
-    console.log('Processing image:', req.file.originalname, 'Size:', req.file.size);
+    console.log('Processing image:', req.file.originalname);
     
-    // Enhance the image with 2x scale for HD quality
+    // Enhance the image (pake function yang work dari Document 1)
     const enhancedUrl = await enhanceImage(
       req.file.buffer, 
-      req.file.originalname || 'image.jpg',
-      2, // Changed to 2x scale for HD quality
-      0  // Type 0 for general enhancement
+      req.file.originalname || 'image.jpg'
     );
 
     console.log('Enhancement completed:', enhancedUrl);
 
-    // Download the enhanced image
-    const imageResponse = await axios.get(enhancedUrl, {
-      responseType: 'arraybuffer',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-      },
-      timeout: 60000,
-      maxContentLength: Infinity,
-      maxBodyLength: Infinity
-    });
+    // Generate ID untuk mapping
+    const imageId = generateId();
+    const originalFilename = req.file.originalname || 'image.jpg';
+    const fileExt = path.extname(originalFilename);
+    const customFilename = `enhanced_${Date.now()}${fileExt}`;
 
-    // Convert the enhanced image to high-quality PNG
-    const originalBuffer = Buffer.from(imageResponse.data);
-    const pngBuffer = await convertToPNG(originalBuffer);
-
-    // Generate proper UUID format like "b0dff5a2-78f3-41b8-8e7c-62acecadb793"
-    const imageId = generateUUID();
-    const finalFilename = `${imageId}.png`; // Always PNG with UUID filename
-    
-    // Store PNG image data in memory cache
-    imageCache.set(imageId, {
-      buffer: pngBuffer,
-      contentType: 'image/png',
-      filename: finalFilename,
+    // Simpan mapping URL (bukan image buffer) - lebih ringan & serverless-friendly
+    urlCache.set(imageId, {
+      originalUrl: enhancedUrl,
+      filename: customFilename,
+      originalName: originalFilename,
       timestamp: Date.now()
     });
 
-    // Clean up old cached images (older than 2 hours)
+    // Clean up old cached URLs (older than 2 hours)
     const twoHoursAgo = Date.now() - (2 * 60 * 60 * 1000);
-    for (const [key, value] of imageCache.entries()) {
+    for (const [key, value] of urlCache.entries()) {
       if (value.timestamp < twoHoursAgo) {
-        imageCache.delete(key);
+        urlCache.delete(key);
       }
     }
 
-    console.log(`High-quality PNG image cached with ID: ${imageId}, Size: ${pngBuffer.length} bytes`);
-
+    // Return response dengan custom endpoints
     res.json({
       success: true,
       imageId: imageId,
-      previewUrl: `/outputs/${finalFilename}`,
-      downloadUrl: `/download/${finalFilename}`,
-      filename: finalFilename,
-      message: 'Image enhanced to 2x HD quality and converted to PNG successfully'
+      previewUrl: `/outputs/${imageId}`,
+      downloadUrl: `/download/${imageId}`,
+      filename: customFilename,
+      message: 'Image enhanced successfully'
     });
 
   } catch (error) {
@@ -247,47 +168,73 @@ app.post('/api/enhance', upload.single('image'), async (req, res) => {
   }
 });
 
-// Serve enhanced image for preview
-app.get('/outputs/:filename', (req, res) => {
-  const filename = req.params.filename;
-  const imageId = filename.replace('.png', ''); // Remove .png extension to get UUID
-  const imageData = imageCache.get(imageId);
+// Custom endpoint untuk preview - redirect ke original imglarger URL
+app.get('/outputs/:imageId', async (req, res) => {
+  const imageId = req.params.imageId;
+  const urlData = urlCache.get(imageId);
   
-  if (!imageData) {
+  if (!urlData) {
     return res.status(404).json({ error: 'Image not found or expired' });
   }
 
-  // Set proper headers for high quality PNG serving
-  res.set({
-    'Content-Type': 'image/png',
-    'Cache-Control': 'public, max-age=7200, s-maxage=7200',
-    'Content-Length': imageData.buffer.length,
-    'Accept-Ranges': 'bytes',
-    'X-Content-Type-Options': 'nosniff'
-  });
+  try {
+    // Fetch image dari original URL dan pipe ke response
+    const response = await axios.get(urlData.originalUrl, {
+      responseType: 'stream',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
 
-  res.send(imageData.buffer);
+    // Set proper headers
+    res.set({
+      'Content-Type': response.headers['content-type'] || 'image/jpeg',
+      'Cache-Control': 'public, max-age=3600',
+      'Content-Length': response.headers['content-length']
+    });
+
+    // Pipe image data
+    response.data.pipe(res);
+  } catch (error) {
+    console.error('Error serving image:', error);
+    // Fallback: redirect ke original URL
+    res.redirect(urlData.originalUrl);
+  }
 });
 
-// Download enhanced image with proper UUID filename
-app.get('/download/:filename', (req, res) => {
-  const filename = req.params.filename;
-  const imageId = filename.replace('.png', ''); // Remove .png extension to get UUID
-  const imageData = imageCache.get(imageId);
+// Custom endpoint untuk download
+app.get('/download/:imageId', async (req, res) => {
+  const imageId = req.params.imageId;
+  const urlData = urlCache.get(imageId);
   
-  if (!imageData) {
+  if (!urlData) {
     return res.status(404).json({ error: 'Image not found or expired' });
   }
 
-  // Download with UUID-style filename like "b0dff5a2-78f3-41b8-8e7c-62acecadb793.png"
-  res.set({
-    'Content-Type': 'image/png',
-    'Content-Disposition': `attachment; filename="${imageData.filename}"`,
-    'Content-Length': imageData.buffer.length,
-    'Cache-Control': 'no-cache'
-  });
+  try {
+    // Fetch image dari original URL
+    const response = await axios.get(urlData.originalUrl, {
+      responseType: 'stream',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
 
-  res.send(imageData.buffer);
+    // Set download headers
+    res.set({
+      'Content-Type': response.headers['content-type'] || 'image/jpeg',
+      'Content-Disposition': `attachment; filename="${urlData.filename}"`,
+      'Content-Length': response.headers['content-length'],
+      'Cache-Control': 'no-cache'
+    });
+
+    // Pipe image data
+    response.data.pipe(res);
+  } catch (error) {
+    console.error('Error downloading image:', error);
+    // Fallback: redirect ke original URL
+    res.redirect(urlData.originalUrl);
+  }
 });
 
 // Serve the main HTML file
@@ -306,7 +253,7 @@ app.use((err, req, res, next) => {
     if (err.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({ 
         success: false, 
-        error: 'File size too large. Maximum size is 20MB.' 
+        error: 'File size too large. Maximum size is 10MB.' 
       });
     }
   }
