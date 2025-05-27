@@ -1,276 +1,251 @@
-const express = require('express');
-const multer = require('multer');
-const cors = require('cors');
-const path = require('path');
-const axios = require('axios');
-const FormData = require('form-data');
-const crypto = require('crypto');
+import express from 'express'
+import multer from 'multer'
+import cors from 'cors'
+import path from 'path'
+import fs from 'fs'
+import { fileURLToPath } from 'url'
+import axios from 'axios'
+import crypto from 'crypto'
+import enhance from './imglarger.js'
 
-const app = express();
-const port = process.env.PORT || 3000;
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+const app = express()
+const port = process.env.PORT || 3000
 
 // Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.static('.'));
+app.use(cors())
+app.use(express.json())
+app.use(express.static('.'))
+
+// Ensure tmp directory exists
+const tmpDir = path.join(__dirname, 'tmp')
+if (!fs.existsSync(tmpDir)) {
+  fs.mkdirSync(tmpDir, { recursive: true })
+}
 
 // Configure multer for file uploads
+const storage = multer.memoryStorage()
 const upload = multer({
-  storage: multer.memoryStorage(),
+  storage: storage,
   limits: {
     fileSize: 10 * 1024 * 1024 // 10MB limit
   },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
+    const allowedTypes = /jpeg|jpg|png|gif|bmp|webp/
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase())
+    const mimetype = allowedTypes.test(file.mimetype)
+    
+    if (mimetype && extname) {
+      return cb(null, true)
     } else {
-      cb(new Error('Only image files are allowed!'), false);
+      cb(new Error('Only image files are allowed!'))
     }
   }
-});
+})
 
-// Simple cache untuk menyimpan mapping URL (bukan image buffer)
-const urlCache = new Map();
+// Store processed images in memory with expiration
+const imageStore = new Map()
+const CACHE_DURATION = 60 * 60 * 1000 // 1 hour
 
-// Generate simple ID
-const generateId = () => crypto.randomBytes(16).toString('hex');
-
-// Image enhancer function (dari Document 1 - yang work)
-const generateUsername = () => `${crypto.randomBytes(8).toString('hex')}_aiimglarger`;
-
-const enhanceImage = async (buffer, filename = 'temp.jpg', scaleRatio = 4, type = 0) => {
-  try {
-    const username = generateUsername();
-
-    // Upload image
-    const formData = new FormData();
-    formData.append('type', type);
-    formData.append('username', username);
-    formData.append('scaleRadio', scaleRatio.toString());
-    formData.append('file', buffer, { 
-      filename: filename, 
-      contentType: 'image/jpeg' 
-    });
-
-    const uploadResponse = await axios.post(
-      'https://photoai.imglarger.com/api/PhoAi/Upload', 
-      formData, 
-      {
-        headers: {
-          ...formData.getHeaders(),
-          'User-Agent': 'Dart/3.5 (dart:io)',
-          'Accept-Encoding': 'gzip',
-        },
-      }
-    );
-
-    const { code } = uploadResponse.data.data;
-    console.log('[UPLOAD]', code);
-
-    // Poll for completion
-    const pollData = { 
-      code: code, 
-      type: type, 
-      username: username, 
-      scaleRadio: scaleRatio.toString() 
-    };
-
-    let result;
-    for (let i = 0; i < 1000; i++) {
-      const statusResponse = await axios.post(
-        'https://photoai.imglarger.com/api/PhoAi/CheckStatus', 
-        JSON.stringify(pollData), 
-        {
-          headers: {
-            'User-Agent': 'Dart/3.5 (dart:io)',
-            'Accept-Encoding': 'gzip',
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      result = statusResponse.data.data;
-      console.log(`[CHECK ${i + 1}]`, result.status);
-
-      if (result.status === 'success') break;
-      await new Promise(resolve => setTimeout(resolve, 500));
+// Cleanup expired images every 30 minutes
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, value] of imageStore.entries()) {
+    if (now - value.timestamp > CACHE_DURATION) {
+      imageStore.delete(key)
+      console.log(`[CLEANUP] Removed expired image: ${key}`)
     }
-
-    if (result.status === 'success') {
-      return result.downloadUrls[0];
-    } else {
-      throw new Error('Enhancement failed after maximum polling attempts.');
-    }
-  } catch (error) {
-    console.error('[ERROR]', error.message || error);
-    throw error;
   }
-};
+}, 30 * 60 * 1000)
 
-// API endpoint for image enhancement
+// Generate unique filename
+const generateFilename = () => {
+  return `enhanced_${crypto.randomBytes(16).toString('hex')}_${Date.now()}.jpg`
+}
+
+// Main enhancement endpoint
 app.post('/api/enhance', upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'No image file provided' 
-      });
+      return res.status(400).json({ success: false, error: 'No image file provided' })
     }
 
-    console.log('Processing image:', req.file.originalname);
+    console.log(`[ENHANCE] Processing image: ${req.file.originalname} (${req.file.size} bytes)`)
+
+    // Get scale factor from request (default: 4x)
+    const scaleRadio = parseInt(req.query.scale) || 4
+    const type = parseInt(req.query.type) || 0 // 0 for general enhancement
+
+    // Use imglarger to enhance the image
+    const downloadUrl = await enhance(req.file.buffer, req.file.originalname, scaleRadio, type)
     
-    // Enhance the image (pake function yang work dari Document 1)
-    const enhancedUrl = await enhanceImage(
-      req.file.buffer, 
-      req.file.originalname || 'image.jpg'
-    );
-
-    console.log('Enhancement completed:', enhancedUrl);
-
-    // Generate ID untuk mapping
-    const imageId = generateId();
-    const originalFilename = req.file.originalname || 'image.jpg';
-    const fileExt = path.extname(originalFilename);
-    const customFilename = `enhanced_${Date.now()}${fileExt}`;
-
-    // Simpan mapping URL (bukan image buffer) - lebih ringan & serverless-friendly
-    urlCache.set(imageId, {
-      originalUrl: enhancedUrl,
-      filename: customFilename,
-      originalName: originalFilename,
-      timestamp: Date.now()
-    });
-
-    // Clean up old cached URLs (older than 2 hours)
-    const twoHoursAgo = Date.now() - (2 * 60 * 60 * 1000);
-    for (const [key, value] of urlCache.entries()) {
-      if (value.timestamp < twoHoursAgo) {
-        urlCache.delete(key);
-      }
+    if (downloadUrl instanceof Error) {
+      throw downloadUrl
     }
 
-    // Return response dengan custom endpoints
+    console.log(`[ENHANCE] Got download URL: ${downloadUrl}`)
+
+    // Download the enhanced image
+    const response = await axios.get(downloadUrl, {
+      responseType: 'arraybuffer',
+      timeout: 30000
+    })
+
+    const enhancedBuffer = Buffer.from(response.data)
+    const filename = generateFilename()
+
+    // Store in memory cache
+    imageStore.set(filename, {
+      buffer: enhancedBuffer,
+      originalName: req.file.originalname,
+      timestamp: Date.now(),
+      contentType: 'image/jpeg'
+    })
+
+    console.log(`[ENHANCE] Image stored with filename: ${filename}`)
+
+    // Return response with custom endpoints
     res.json({
       success: true,
-      imageId: imageId,
-      previewUrl: `/outputs/${imageId}`,
-      downloadUrl: `/download/${imageId}`,
-      filename: customFilename,
-      message: 'Image enhanced successfully'
-    });
+      filename: filename,
+      originalName: req.file.originalname,
+      previewUrl: `/api/output/${filename}`,
+      downloadUrl: `/api/download/${filename}`,
+      size: enhancedBuffer.length,
+      scale: scaleRadio
+    })
 
   } catch (error) {
-    console.error('Enhancement error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to enhance image'
-    });
+    console.error('[ENHANCE ERROR]', error.message || error)
+    res.status(500).json({ 
+      success: false, 
+      error: error.message || 'Enhancement failed' 
+    })
   }
-});
+})
 
-// Custom endpoint untuk preview - redirect ke original imglarger URL
-app.get('/outputs/:imageId', async (req, res) => {
-  const imageId = req.params.imageId;
-  const urlData = urlCache.get(imageId);
-  
-  if (!urlData) {
-    return res.status(404).json({ error: 'Image not found or expired' });
-  }
-
+// Custom output endpoint for preview/display
+app.get('/api/output/:filename', (req, res) => {
   try {
-    // Fetch image dari original URL dan pipe ke response
-    const response = await axios.get(urlData.originalUrl, {
-      responseType: 'stream',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
-    });
+    const filename = req.params.filename
+    const imageData = imageStore.get(filename)
 
-    // Set proper headers
+    if (!imageData) {
+      return res.status(404).json({ error: 'Image not found or expired' })
+    }
+
+    // Set appropriate headers for image display
     res.set({
-      'Content-Type': response.headers['content-type'] || 'image/jpeg',
+      'Content-Type': imageData.contentType,
+      'Content-Length': imageData.buffer.length,
       'Cache-Control': 'public, max-age=3600',
-      'Content-Length': response.headers['content-length']
-    });
+      'Last-Modified': new Date(imageData.timestamp).toUTCString()
+    })
 
-    // Pipe image data
-    response.data.pipe(res);
+    res.send(imageData.buffer)
+    console.log(`[OUTPUT] Served image: ${filename}`)
+
   } catch (error) {
-    console.error('Error serving image:', error);
-    // Fallback: redirect ke original URL
-    res.redirect(urlData.originalUrl);
+    console.error('[OUTPUT ERROR]', error)
+    res.status(500).json({ error: 'Failed to serve image' })
   }
-});
+})
 
-// Custom endpoint untuk download
-app.get('/download/:imageId', async (req, res) => {
-  const imageId = req.params.imageId;
-  const urlData = urlCache.get(imageId);
-  
-  if (!urlData) {
-    return res.status(404).json({ error: 'Image not found or expired' });
-  }
-
+// Custom download endpoint
+app.get('/api/download/:filename', (req, res) => {
   try {
-    // Fetch image dari original URL
-    const response = await axios.get(urlData.originalUrl, {
-      responseType: 'stream',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
-    });
+    const filename = req.params.filename
+    const imageData = imageStore.get(filename)
 
-    // Set download headers
+    if (!imageData) {
+      return res.status(404).json({ error: 'Image not found or expired' })
+    }
+
+    // Set headers for file download
+    const downloadName = `enhanced_${imageData.originalName}` || filename
+    
     res.set({
-      'Content-Type': response.headers['content-type'] || 'image/jpeg',
-      'Content-Disposition': `attachment; filename="${urlData.filename}"`,
-      'Content-Length': response.headers['content-length'],
+      'Content-Type': 'application/octet-stream',
+      'Content-Disposition': `attachment; filename="${downloadName}"`,
+      'Content-Length': imageData.buffer.length,
       'Cache-Control': 'no-cache'
-    });
+    })
 
-    // Pipe image data
-    response.data.pipe(res);
+    res.send(imageData.buffer)
+    console.log(`[DOWNLOAD] File downloaded: ${filename} as ${downloadName}`)
+
   } catch (error) {
-    console.error('Error downloading image:', error);
-    // Fallback: redirect ke original URL
-    res.redirect(urlData.originalUrl);
+    console.error('[DOWNLOAD ERROR]', error)
+    res.status(500).json({ error: 'Failed to download image' })
   }
-});
+})
+
+// Status endpoint to check if image exists
+app.get('/api/status/:filename', (req, res) => {
+  const filename = req.params.filename
+  const imageData = imageStore.get(filename)
+  
+  if (imageData) {
+    res.json({
+      exists: true,
+      filename: filename,
+      originalName: imageData.originalName,
+      size: imageData.buffer.length,
+      timestamp: imageData.timestamp,
+      expiresIn: CACHE_DURATION - (Date.now() - imageData.timestamp)
+    })
+  } else {
+    res.json({ exists: false })
+  }
+})
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    cachedImages: imageStore.size,
+    uptime: process.uptime()
+  })
+})
 
 // Serve the main HTML file
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
-});
+  res.sendFile(path.join(__dirname, 'index.html'))
+})
 
 // Error handling middleware
-app.use((err, req, res, next) => {
-  if (err instanceof multer.MulterError) {
-    if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'File size too large. Maximum size is 10MB.' 
-      });
+app.use((error, req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ success: false, error: 'File too large. Maximum size is 10MB.' })
     }
   }
   
-  console.error('Server error:', err);
-  res.status(500).json({ 
-    success: false, 
-    error: 'Internal server error' 
-  });
-});
+  console.error('[SERVER ERROR]', error)
+  res.status(500).json({ success: false, error: 'Internal server error' })
+})
 
-// Export for Vercel serverless function
-module.exports = app;
+// Start server
+app.listen(port, () => {
+  console.log(`[SERVER] Image Enhancer running on port ${port}`)
+  console.log(`[SERVER] Cache duration: ${CACHE_DURATION / 1000 / 60} minutes`)
+  console.log(`[SERVER] Max file size: 10MB`)
+})
 
-if (require.main === module) {
-  app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-    console.log(`Visit http://localhost:${port} to use the image enhancer`);
-  });
-}
+// Handle graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('[SERVER] Received SIGTERM, shutting down gracefully...')
+  imageStore.clear()
+  process.exit(0)
+})
+
+process.on('SIGINT', () => {
+  console.log('[SERVER] Received SIGINT, shutting down gracefully...')
+  imageStore.clear()
+  process.exit(0)
+})
+
+export default app
