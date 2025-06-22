@@ -5,6 +5,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import imgUpscale from './lib/imgupscale.js'
 import { uploadToHerta } from './lib/fileUpload.js'
+import axios from 'axios'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -15,7 +16,7 @@ const port = process.env.PORT || 3000
 // Middleware
 app.use(cors())
 app.use(express.json())
-app.use(express.static('public'))
+app.use(express.static(path.join(__dirname, 'public')))
 
 // Configure multer for memory storage
 const upload = multer({
@@ -63,14 +64,54 @@ app.post('/api/enhance', upload.single('image'), async (req, res) => {
     const enhancedUrl = result.data.downloadUrls[0]
     console.log(`[ENHANCE] Enhanced image URL: ${enhancedUrl}`)
 
-    // Return success response
-    res.json({
-      success: true,
-      originalUrl: imageUrl,
-      enhancedUrl: enhancedUrl,
-      scale: scale,
-      originalName: req.file.originalname
-    })
+    // Step 3: Download enhanced image and upload to Herta for local serving
+    try {
+      const enhancedResponse = await axios.get(enhancedUrl, {
+        responseType: 'arraybuffer',
+        timeout: 30000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+        }
+      })
+
+      const enhancedBuffer = Buffer.from(enhancedResponse.data)
+      const enhancedName = `enhanced_${Date.now()}_${req.file.originalname}`
+      
+      const enhancedHertaUpload = await uploadToHerta(enhancedBuffer, enhancedName)
+      
+      if (enhancedHertaUpload.success) {
+        // Return success response with local URL for frontend
+        res.json({
+          success: true,
+          localUrl: enhancedHertaUpload.url,  // This is what frontend expects
+          originalUrl: imageUrl,
+          enhancedUrl: enhancedUrl,
+          scale: scale,
+          originalName: req.file.originalname
+        })
+      } else {
+        // Fallback to direct enhanced URL if Herta upload fails
+        res.json({
+          success: true,
+          localUrl: enhancedUrl,  // Fallback to original enhanced URL
+          originalUrl: imageUrl,
+          enhancedUrl: enhancedUrl,
+          scale: scale,
+          originalName: req.file.originalname
+        })
+      }
+    } catch (downloadError) {
+      console.error('[DOWNLOAD ERROR]', downloadError.message)
+      // Fallback to direct enhanced URL
+      res.json({
+        success: true,
+        localUrl: enhancedUrl,
+        originalUrl: imageUrl,
+        enhancedUrl: enhancedUrl,
+        scale: scale,
+        originalName: req.file.originalname
+      })
+    }
 
   } catch (error) {
     console.error('[ENHANCE ERROR]', error.message)
@@ -109,6 +150,7 @@ app.use((error, req, res, next) => {
 
 app.listen(port, () => {
   console.log(`[SERVER] Image Enhancer running on port ${port}`)
+  console.log(`[SERVER] Static files served from: ${path.join(__dirname, 'public')}`)
 })
 
 export default app
