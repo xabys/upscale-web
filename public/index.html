@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Enhancer</title>
+  <meta name="description" content="AI-powered image enhancement tool">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🖼️</text></svg>">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      max-width: 500px;
+      width: 100%;
+    }
+    
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 30px;
+      font-size: 28px;
+      font-weight: 600;
+    }
+    
+    .upload-area {
+      border: 2px dashed #ddd;
+      border-radius: 15px;
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-bottom: 20px;
+    }
+    
+    .upload-area:hover {
+      border-color: #667eea;
+      background: #f8f9ff;
+    }
+    
+    .upload-area.dragover {
+      border-color: #667eea;
+      background: #f0f2ff;
+    }
+    
+    .upload-text {
+      color: #666;
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+    
+    .upload-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 25px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 500;
+      transition: transform 0.2s ease;
+    }
+    
+    .upload-btn:hover {
+      transform: translateY(-2px);
+    }
+    
+    .scale-selector {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    
+    .scale-selector label {
+      display: block;
+      margin-bottom: 8px;
+      color: #555;
+      font-weight: 500;
+    }
+    
+    .scale-options {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+    
+    .scale-option {
+      background: #f5f5f5;
+      border: 2px solid transparent;
+      padding: 8px 16px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .scale-option.active {
+      background: #667eea;
+      color: white;
+      border-color: #667eea;
+    }
+    
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 20px;
+    }
+    
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 15px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .result {
+      display: none;
+      text-align: center;
+      margin-top: 20px;
+    }
+    
+    .result img {
+      max-width: 100%;
+      border-radius: 10px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+      margin-bottom: 15px;
+    }
+    
+    .result-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+    
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      display: inline-block;
+      transition: transform 0.2s ease;
+    }
+    
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+    
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+    
+    .btn-success {
+      background: #4caf50;
+      color: white;
+    }
+    
+    .error {
+      background: #ffebee;
+      color: #c62828;
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 15px;
+      display: none;
+    }
+    
+    #fileInput {
+      display: none;
+    }
+    
+    @media (max-width: 600px) {
+      .container {
+        padding: 20px;
+      }
+      
+      h1 {
+        font-size: 24px;
+      }
+      
+      .result-buttons {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🖼️ Image Enhancer</h1>
+    
+    <div class="scale-selector">
+      <label>Enhancement Level:</label>
+      <div class="scale-options">
+        <div class="scale-option" data-scale="2">2x</div>
+        <div class="scale-option active" data-scale="4">4x</div>
+      </div>
+    </div>
+    
+    <div class="upload-area" id="uploadArea">
+      <div class="upload-text">Drag & drop your image here</div>
+      <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+        Choose Image
+      </button>
+      <input type="file" id="fileInput" accept="image/*">
+    </div>
+    
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p>Enhancing your image, please wait...</p>
+    </div>
+    
+    <div class="result" id="result">
+      <img id="enhancedImage" src="" alt="Enhanced">
+      <div class="result-buttons">
+        <button class="btn btn-primary" id="previewBtn">View Full Size</button>
+        <a class="btn btn-success" id="downloadBtn" download>Download</a>
+      </div>
+    </div>
+    
+    <div class="error" id="error"></div>
+  </div>
+
+  <script>
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const loading = document.getElementById('loading');
+    const result = document.getElementById('result');
+    const enhancedImage = document.getElementById('enhancedImage');
+    const previewBtn = document.getElementById('previewBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const errorDiv = document.getElementById('error');
+    const scaleOptions = document.querySelectorAll('.scale-option');
+    
+    let currentScale = '4';
+    let enhancedUrl = '';
+    
+    // Scale selection
+    scaleOptions.forEach(option => {
+      option.addEventListener('click', () => {
+        scaleOptions.forEach(opt => opt.classList.remove('active'));
+        option.classList.add('active');
+        currentScale = option.dataset.scale;
+      });
+    });
+    
+    // File input handler
+    fileInput.addEventListener('change', handleFile);
+    
+    // Drag and drop
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+    
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('dragover');
+    });
+    
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        processFile(files[0]);
+      }
+    });
+    
+    function handleFile(e) {
+      const file = e.target.files[0];
+      if (file) {
+        processFile(file);
+      }
+    }
+    
+    async function processFile(file) {
+      if (!file.type.startsWith('image/')) {
+        showError('Please select an image file');
+        return;
+      }
+      
+      if (file.size > 10 * 1024 * 1024) {
+        showError('File too large. Maximum size is 10MB');
+        return;
+      }
+      
+      hideError();
+      showLoading();
+      
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      try {
+        const response = await fetch(`/api/enhance?scale=${currentScale}`, {
+          method: 'POST',
+          body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          enhancedUrl = data.enhancedUrl;
+          enhancedImage.src = enhancedUrl;
+          downloadBtn.href = enhancedUrl;
+          downloadBtn.download = `enhanced_${data.originalName}`;
+          showResult();
+        } else {
+          showError(data.error || 'Enhancement failed');
+        }
+      } catch (error) {
+        showError('Network error. Please try again.');
+        console.error('Error:', error);
+      } finally {
+        hideLoading();
+      }
+    }
+    
+    previewBtn.addEventListener('click', () => {
+      if (enhancedUrl) {
+        window.open(enhancedUrl, '_blank');
+      }
+    });
+    
+    function showLoading() {
+      loading.style.display = 'block';
+      result.style.display = 'none';
+    }
+    
+    function hideLoading() {
+      loading.style.display = 'none';
+    }
+    
+    function showResult() {
+      result.style.display = 'block';
+    }
+    
+    function showError(message) {
+      errorDiv.textContent = message;
+      errorDiv.style.display = 'block';
+    }
+    
+    function hideError() {
+      errorDiv.style.display = 'none';
+    }
+  </script>
+</body>
+</html>
