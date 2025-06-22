@@ -1,371 +1,161 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Image Enhancer</title>
-  <meta name="description" content="AI-powered image enhancement tool">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🖼️</text></svg>">
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+<head> 
+  <!-- Favicon --> 
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+  
+  <!-- Meta Tags --> 
+  <meta name="description" content="AI Image Enhancer - Upscale your images with AI"> 
+  <meta name="keywords" content="enhance, enhance img, image upscaler, upscale, AI"> 
+  <meta name="author" content="Image Enhancer"> 
+  <meta name="theme-color" content="#000000"> 
+  
+  <!-- Open Graph / Facebook --> 
+  <meta property="og:title" content="AI Image Enhancer"> 
+  <meta property="og:description" content="AI Image Enhancer - Upscale your images with AI"> 
+  <meta property="og:type" content="website"> 
+  
+  <!-- Twitter Meta Tags --> 
+  <meta name="twitter:card" content="summary_large_image"> 
+  <meta name="twitter:title" content="AI Image Enhancer"> 
+  <meta name="twitter:description" content="AI Image Enhancer - Upscale your images with AI"> 
+  
+  <meta charset="UTF-8"> 
+  <title>Enhance Image</title> 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.16 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.mb-4{margin-bottom:1rem}.mb-6{margin-bottom:1.5rem}.mt-6{margin-top:1.5rem}.flex{display:flex}.hidden{display:none}.h-10{height:2.5rem}.max-h-96{max-height:24rem}.min-h-screen{min-height:100vh}.w-10{width:2.5rem}.w-full{width:100%}.max-w-md{max-width:28rem}.flex-1{flex:1 1 0%}@keyframes spin{to{transform:rotate(360deg)}}.animate-spin{animation:spin 1s linear infinite}.cursor-pointer{cursor:pointer}.flex-col{flex-direction:column}.items-center{align-items:center}.justify-center{justify-content:center}.gap-3{gap:0.75rem}.rounded{border-radius:0.25rem}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:0.5rem}.border-2{border-width:2px}.border-4{border-width:4px}.border-dashed{border-style:dashed}.border-blue-500{--tw-border-opacity:1;border-color:rgb(59 130 246 / var(--tw-border-opacity, 1))}.border-gray-300{--tw-border-opacity:1;border-color:rgb(209 213 219 / var(--tw-border-opacity, 1))}.bg-blue-500{--tw-bg-opacity:1;background-color:rgb(59 130 246 / var(--tw-bg-opacity, 1))}.bg-gray-100{--tw-bg-opacity:1;background-color:rgb(243 244 246 / var(--tw-bg-opacity, 1))}.bg-green-500{--tw-bg-opacity:1;background-color:rgb(34 197 94 / var(--tw-bg-opacity, 1))}.bg-indigo-500{--tw-bg-opacity:1;background-color:rgb(99 102 241 / var(--tw-bg-opacity, 1))}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.object-contain{object-fit:contain}.opacity-50{opacity:0.5}.p-4{padding:1rem}.p-6{padding:1.5rem}.px-4{padding-left:1rem;padding-right:1rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.pointer-events-none{pointer-events:none}.text-center{text-align:center}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.font-bold{font-weight:700}.font-semibold{font-weight:600}.text-blue-500{--tw-text-opacity:1;color:rgb(59 130 246 / var(--tw-text-opacity, 1))}.text-gray-500{--tw-text-opacity:1;color:rgb(107 114 128 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.shadow{--tw-shadow:0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 1px 3px 0 var(--tw-shadow-color), 0 1px 2px -1px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-lg{--tw-shadow:0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.transition{transition-property:color, background-color, border-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.hover\:border-blue-400:hover{--tw-border-opacity:1;border-color:rgb(96 165 250 / var(--tw-border-opacity, 1))}.hover\:bg-blue-600:hover{--tw-bg-opacity:1;background-color:rgb(37 99 235 / var(--tw-bg-opacity, 1))}.hover\:bg-green-600:hover{--tw-bg-opacity:1;background-color:rgb(22 163 74 / var(--tw-bg-opacity, 1))}.hover\:bg-indigo-600:hover{--tw-bg-opacity:1;background-color:rgb(79 70 229 / var(--tw-bg-opacity, 1))}@media (min-width: 640px){.sm\:h-12{height:3rem}.sm\:w-12{width:3rem}.sm\:max-w-lg{max-width:32rem}.sm\:flex-row{flex-direction:row}.sm\:gap-4{gap:1rem}.sm\:p-10{padding:2.5rem}.sm\:p-8{padding:2rem}.sm\:text-2xl{font-size:1.5rem;line-height:2rem}.sm\:text-base{font-size:1rem;line-height:1.5rem}}</style> 
+</head> 
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4"> 
+  <div class="bg-white shadow-lg rounded-lg p-6 sm:p-8 w-full max-w-md sm:max-w-lg"> 
+    <h1 class="text-xl sm:text-2xl font-bold mb-6 text-center">Enhance Your Image</h1> 
     
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
+    <!-- Drag and Drop Area --> 
+    <div id="drop-area" class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 sm:p-10 cursor-pointer hover:border-blue-400 transition text-center"> 
+      <p class="text-gray-500 mb-4 text-sm sm:text-base">Drag & Drop your image here</p> 
+      <input type="file" id="fileElem" accept="image/*" class="hidden"> 
+      <button id="fileSelect" type="button" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded text-sm sm:text-base">Select Image</button> 
+    </div> 
     
-    .container {
-      background: white;
-      border-radius: 20px;
-      padding: 40px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-      max-width: 500px;
-      width: 100%;
-    }
+    <!-- Upload Progress --> 
+    <div id="uploading" class="hidden flex flex-col items-center mt-6"> 
+      <div class="w-10 h-10 sm:w-12 sm:h-12 border-4 border-blue-500 border-dashed rounded-full animate-spin mb-4"></div> 
+      <p class="text-blue-500 font-semibold text-center text-sm sm:text-base">Enhancing your image, please wait...</p> 
+    </div> 
     
-    h1 {
-      text-align: center;
-      color: #333;
-      margin-bottom: 30px;
-      font-size: 28px;
-      font-weight: 600;
-    }
-    
-    .upload-area {
-      border: 2px dashed #ddd;
-      border-radius: 15px;
-      padding: 40px 20px;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      margin-bottom: 20px;
-    }
-    
-    .upload-area:hover {
-      border-color: #667eea;
-      background: #f8f9ff;
-    }
-    
-    .upload-area.dragover {
-      border-color: #667eea;
-      background: #f0f2ff;
-    }
-    
-    .upload-text {
-      color: #666;
-      margin-bottom: 15px;
-      font-size: 16px;
-    }
-    
-    .upload-btn {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border: none;
-      padding: 12px 30px;
-      border-radius: 25px;
-      cursor: pointer;
-      font-size: 16px;
-      font-weight: 500;
-      transition: transform 0.2s ease;
-    }
-    
-    .upload-btn:hover {
-      transform: translateY(-2px);
-    }
-    
-    .scale-selector {
-      margin-bottom: 20px;
-      text-align: center;
-    }
-    
-    .scale-selector label {
-      display: block;
-      margin-bottom: 8px;
-      color: #555;
-      font-weight: 500;
-    }
-    
-    .scale-options {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-    }
-    
-    .scale-option {
-      background: #f5f5f5;
-      border: 2px solid transparent;
-      padding: 8px 16px;
-      border-radius: 20px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    
-    .scale-option.active {
-      background: #667eea;
-      color: white;
-      border-color: #667eea;
-    }
-    
-    .loading {
-      display: none;
-      text-align: center;
-      padding: 20px;
-    }
-    
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #667eea;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 15px;
-    }
-    
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    
-    .result {
-      display: none;
-      text-align: center;
-      margin-top: 20px;
-    }
-    
-    .result img {
-      max-width: 100%;
-      border-radius: 10px;
-      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-      margin-bottom: 15px;
-    }
-    
-    .result-buttons {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-    }
-    
-    .btn {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 20px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-      text-decoration: none;
-      display: inline-block;
-      transition: transform 0.2s ease;
-    }
-    
-    .btn:hover {
-      transform: translateY(-1px);
-    }
-    
-    .btn-primary {
-      background: #667eea;
-      color: white;
-    }
-    
-    .btn-success {
-      background: #4caf50;
-      color: white;
-    }
-    
-    .error {
-      background: #ffebee;
-      color: #c62828;
-      padding: 15px;
-      border-radius: 10px;
-      margin-top: 15px;
-      display: none;
-    }
-    
-    #fileInput {
-      display: none;
-    }
-    
-    @media (max-width: 600px) {
-      .container {
-        padding: 20px;
-      }
-      
-      h1 {
-        font-size: 24px;
-      }
-      
-      .result-buttons {
-        flex-direction: column;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>🖼️ Image Enhancer</h1>
-    
-    <div class="scale-selector">
-      <label>Enhancement Level:</label>
-      <div class="scale-options">
-        <div class="scale-option" data-scale="2">2x</div>
-        <div class="scale-option active" data-scale="4">4x</div>
-      </div>
-    </div>
-    
-    <div class="upload-area" id="uploadArea">
-      <div class="upload-text">Drag & drop your image here</div>
-      <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
-        Choose Image
-      </button>
-      <input type="file" id="fileInput" accept="image/*">
-    </div>
-    
-    <div class="loading" id="loading">
-      <div class="spinner"></div>
-      <p>Enhancing your image, please wait...</p>
-    </div>
-    
-    <div class="result" id="result">
-      <img id="enhancedImage" src="" alt="Enhanced">
-      <div class="result-buttons">
-        <button class="btn btn-primary" id="previewBtn">View Full Size</button>
-        <a class="btn btn-success" id="downloadBtn" download>Download</a>
-      </div>
-    </div>
-    
-    <div class="error" id="error"></div>
+    <!-- Result --> 
+    <div id="result" class="mt-6 hidden"> 
+      <img id="enhancedImage" src="" alt="Enhanced" class="w-full max-h-96 object-contain rounded shadow mb-4"> 
+      <div class="flex flex-col sm:flex-row gap-3 sm:gap-4"> 
+        <a id="previewBtn" href="#" target="_blank" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded text-center">Preview</a> 
+        <a id="downloadBtn" href="#" download="" class="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded text-center">Download</a> 
+      </div> 
+    </div> 
   </div>
 
   <script>
-    const uploadArea = document.getElementById('uploadArea');
-    const fileInput = document.getElementById('fileInput');
-    const loading = document.getElementById('loading');
-    const result = document.getElementById('result');
+    const dropArea = document.getElementById('drop-area');
+    const fileElem = document.getElementById('fileElem');
+    const fileSelect = document.getElementById('fileSelect');
+    const uploading = document.getElementById('uploading');
+    const resultDiv = document.getElementById('result');
     const enhancedImage = document.getElementById('enhancedImage');
     const previewBtn = document.getElementById('previewBtn');
     const downloadBtn = document.getElementById('downloadBtn');
-    const errorDiv = document.getElementById('error');
-    const scaleOptions = document.querySelectorAll('.scale-option');
-    
-    let currentScale = '4';
-    let enhancedUrl = '';
-    
-    // Scale selection
-    scaleOptions.forEach(option => {
-      option.addEventListener('click', () => {
-        scaleOptions.forEach(opt => opt.classList.remove('active'));
-        option.classList.add('active');
-        currentScale = option.dataset.scale;
-      });
+
+    // Open file dialog
+    fileSelect.addEventListener('click', () => fileElem.click());
+
+    // Handle file input change
+    fileElem.addEventListener('change', handleFiles);
+
+    // Drag and drop events
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      dropArea.addEventListener(eventName, preventDefaults, false);
+      document.body.addEventListener(eventName, preventDefaults, false);
     });
-    
-    // File input handler
-    fileInput.addEventListener('change', handleFile);
-    
-    // Drag and drop
-    uploadArea.addEventListener('dragover', (e) => {
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropArea.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropArea.addEventListener(eventName, unhighlight, false);
+    });
+
+    function preventDefaults(e) {
       e.preventDefault();
-      uploadArea.classList.add('dragover');
-    });
-    
-    uploadArea.addEventListener('dragleave', () => {
-      uploadArea.classList.remove('dragover');
-    });
-    
-    uploadArea.addEventListener('drop', (e) => {
-      e.preventDefault();
-      uploadArea.classList.remove('dragover');
-      const files = e.dataTransfer.files;
-      if (files.length > 0) {
-        processFile(files[0]);
-      }
-    });
-    
-    function handleFile(e) {
-      const file = e.target.files[0];
-      if (file) {
-        processFile(file);
-      }
+      e.stopPropagation();
     }
-    
-    async function processFile(file) {
+
+    function highlight(e) {
+      dropArea.classList.add('border-blue-400');
+    }
+
+    function unhighlight(e) {
+      dropArea.classList.remove('border-blue-400');
+    }
+
+    dropArea.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      handleFiles({ target: { files: files } });
+    });
+
+    function handleFiles(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      // Validate file type
       if (!file.type.startsWith('image/')) {
-        showError('Please select an image file');
+        alert('Please select an image file.');
         return;
       }
       
+      // Validate file size (10MB limit)
       if (file.size > 10 * 1024 * 1024) {
-        showError('File too large. Maximum size is 10MB');
+        alert('File too large. Please select an image smaller than 10MB.');
         return;
       }
       
-      hideError();
-      showLoading();
-      
-      const formData = new FormData();
-      formData.append('image', file);
-      
+      uploadFile(file);
+    }
+
+    async function uploadFile(file) {
       try {
-        const response = await fetch(`/api/enhance?scale=${currentScale}`, {
+        uploading.classList.remove('hidden');
+        resultDiv.classList.add('hidden');
+        dropArea.classList.add('opacity-50', 'pointer-events-none');
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        const response = await fetch('/api/enhance', {
           method: 'POST',
           body: formData
         });
-        
+
         const data = await response.json();
-        
-        if (data.success) {
-          enhancedUrl = data.enhancedUrl;
-          enhancedImage.src = enhancedUrl;
-          downloadBtn.href = enhancedUrl;
-          downloadBtn.download = `enhanced_${data.originalName}`;
-          showResult();
+
+        if (data.success && data.localUrl) {
+          // Set the enhanced image and download links
+          enhancedImage.src = data.localUrl;
+          previewBtn.href = data.localUrl;
+          downloadBtn.href = data.localUrl;
+          downloadBtn.download = `enhanced_${file.name}`;
+
+          resultDiv.classList.remove('hidden');
         } else {
-          showError(data.error || 'Enhancement failed');
+          throw new Error(data.error || 'Enhancement failed');
         }
       } catch (error) {
-        showError('Network error. Please try again.');
         console.error('Error:', error);
+        alert('Enhancement failed: ' + error.message);
       } finally {
-        hideLoading();
+        uploading.classList.add('hidden');
+        dropArea.classList.remove('opacity-50', 'pointer-events-none');
       }
     }
-    
-    previewBtn.addEventListener('click', () => {
-      if (enhancedUrl) {
-        window.open(enhancedUrl, '_blank');
-      }
-    });
-    
-    function showLoading() {
-      loading.style.display = 'block';
-      result.style.display = 'none';
-    }
-    
-    function hideLoading() {
-      loading.style.display = 'none';
-    }
-    
-    function showResult() {
-      result.style.display = 'block';
-    }
-    
-    function showError(message) {
-      errorDiv.textContent = message;
-      errorDiv.style.display = 'block';
-    }
-    
-    function hideError() {
-      errorDiv.style.display = 'none';
-    }
-  </script>
+  </script> 
 </body>
 </html>
