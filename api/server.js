@@ -35,6 +35,54 @@ const upload = multer({
   }
 })
 
+// Fixed download proxy endpoint
+app.get('/api/download', async (req, res) => {
+  try {
+    const { url, filename } = req.query
+    
+    if (!url) {
+      return res.status(400).json({ success: false, error: 'URL parameter is required' })
+    }
+
+    console.log(`[DOWNLOAD] Proxying download for: ${url}`)
+
+    // Fetch the image from the URL
+    const response = await axios.get(url, {
+      responseType: 'stream',
+      timeout: 30000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        'Accept': 'image/*'
+      }
+    })
+
+    // Set proper headers for forced download
+    const downloadFilename = filename || 'enhanced_image.jpg'
+    
+    // IMPORTANT: These headers force download instead of preview
+    res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`)
+    res.setHeader('Content-Type', 'application/octet-stream') // Force download
+    res.setHeader('Content-Length', response.headers['content-length'] || '')
+    res.setHeader('Cache-Control', 'no-cache')
+    res.setHeader('Pragma', 'no-cache')
+    
+    // Additional headers to prevent preview
+    res.setHeader('Content-Description', 'File Transfer')
+    res.setHeader('Content-Transfer-Encoding', 'binary')
+    res.setHeader('Expires', '0')
+    
+    // Pipe the image data to response
+    response.data.pipe(res)
+
+  } catch (error) {
+    console.error('[DOWNLOAD ERROR]', error.message)
+    res.status(500).json({ 
+      success: false, 
+      error: 'Download failed: ' + error.message 
+    })
+  }
+})
+
 // Main enhancement endpoint
 app.post('/api/enhance', upload.single('image'), async (req, res) => {
   try {
